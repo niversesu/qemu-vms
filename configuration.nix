@@ -104,6 +104,10 @@
 
   # ── Autologin + Cage ──────────────────────────────────────────────────────
   services.getty.autologinUser = "kale-vm";
+
+  programs.bash.interactiveShellInit = ''
+    WLR_RENDERER=pixman cage -- waydroid app launch com.roblox.client
+  '';
   # ── zram ──────────────────────────────────────────────────────────────────
   zramSwap = {
     enable = true;
@@ -126,3 +130,4 @@
 
   system.stateVersion = "25.05";
 }
+
