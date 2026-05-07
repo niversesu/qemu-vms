@@ -3,7 +3,16 @@
   pkgs,
   lib,
   ...
-}: {
+}:
+
+let
+  robloxApk = pkgs.fetchurl {
+    url = "https://pub-786f3caa6e0c467d81af67b260388ae9.r2.dev/roblox-2.718.1110.apk";
+    sha256 = "006xa2cn95igv5ixg17ij3hryj9229rq7zpn4jypfd5ns3ahlacc";
+  };
+in
+
+{
   # ── Boot ──────────────────────────────────────────────────────────────────
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -42,7 +51,7 @@
   };
 
   # ── Locale / time ─────────────────────────────────────────────────────────
-  time.timeZone = "Africa/Nairobi";
+  time.timeZone = "UTC";
   i18n.defaultLocale = "en_US.UTF-8";
 
   # ── Sound ─────────────────────────────────────────────────────────────────
@@ -71,12 +80,6 @@
 
   security.sudo.wheelNeedsPassword = false;
 
-  # ── Environment ───────────────────────────────────────────────────────────
-  environment.sessionVariables = {
-    WLR_RENDERER = "gles2";
-    WLR_NO_HARDWARE_CURSORS = "1";
-  };
-
   # ── Packages ──────────────────────────────────────────────────────────────
   environment.systemPackages = with pkgs; [
     neovim
@@ -102,12 +105,35 @@
     "net.ipv6.conf.all.forwarding" = 1;
   };
 
-  # ── Autologin + Cage ──────────────────────────────────────────────────────
+  # ── Waydroid first-boot setup + launch ───────────────────────────────────
+  systemd.services.waydroid-setup = {
+    description = "Initialize Waydroid, install Roblox, and launch it";
+    wantedBy = ["multi-user.target"];
+    after = ["waydroid-container.service" "network-online.target"];
+    wants = ["network-online.target"];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "kale-vm";
+      ExecStart = pkgs.writeShellScript "waydroid-setup" ''
+        STAMP=/var/lib/waydroid-setup/done
+
+        if [ ! -f "$STAMP" ]; then
+          waydroid init -s GAPPS -f
+          sleep 5
+          waydroid app install ${robloxApk}
+          mkdir -p /var/lib/waydroid-setup
+          touch "$STAMP"
+        fi
+
+        WLR_RENDERER=pixman cage -- waydroid app launch com.roblox.client
+      '';
+    };
+  };
+
+  # ── Autologin ─────────────────────────────────────────────────────────────
   services.getty.autologinUser = "kale-vm";
 
-  programs.bash.interactiveShellInit = ''
-    WLR_RENDERER=pixman cage -- waydroid app launch com.roblox.client
-  '';
   # ── zram ──────────────────────────────────────────────────────────────────
   zramSwap = {
     enable = true;
@@ -130,4 +156,3 @@
 
   system.stateVersion = "25.05";
 }
-
