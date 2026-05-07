@@ -22,6 +22,8 @@
 
 A minimal NixOS VM image with Waydroid support, running on the Zen kernel with KVM acceleration. Built for QEMU with `virtio-vga-gl` and OpenGL passthrough.
 
+please configure this for your system.
+
 **Specs:** 6 GB RAM · 8 cores · 20 GB disk · Pipewire · zram swap · SSH on `:2222`
 
 ---
@@ -80,8 +82,8 @@ qemu-system-x86_64.exe ^
 ## Build from source (Nix)
 
 ```bash
-git clone <this-repo>
-cd <this-repo>
+git clone https://github.com/niversesu/qemu-vms
+cd https://github.com/niversesu/qemu-vms
 
 # Build the VM image
 nix build .#nixosConfigurations.kale-vm.config.system.build.vm
