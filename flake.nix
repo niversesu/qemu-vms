@@ -10,7 +10,6 @@
     self,
     nixpkgs,
     nur,
-    nix-flatpak,
   }: {
     nixosConfigurations.kale-vm = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
