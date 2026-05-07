@@ -74,7 +74,7 @@ in
   users.users.kale-vm = {
     isNormalUser = true;
     description = "Kale VM";
-    extraGroups = ["wheel" "networkmanager"];
+    extraGroups = ["wheel" "networkmanager" "video" "input"];
     initialPassword = "123";
   };
 
@@ -128,25 +128,20 @@ in
     };
   };
 
-  # ── Waydroid launch (user, after init) ────────────────────────────────────
-  systemd.services.waydroid-launch = {
-    description = "Launch Roblox in Waydroid";
-    wantedBy = ["multi-user.target"];
-    after = ["waydroid-init.service"];
-    requires = ["waydroid-init.service"];
-    serviceConfig = {
-      Type = "simple";
-      User = "kale-vm";
-      ExecStart = pkgs.writeShellScript "waydroid-launch" ''
-        export PATH=${lib.makeBinPath (with pkgs; [waydroid cage])}:$PATH
-        export XDG_RUNTIME_DIR=/run/user/$(id -u)
-        WLR_RENDERER=pixman cage -- waydroid app launch com.roblox.client
-      '';
-    };
-  };
-
-  # ── Autologin ─────────────────────────────────────────────────────────────
+  # ── Autologin + launch on tty1 ────────────────────────────────────────────
   services.getty.autologinUser = "kale-vm";
+
+  programs.bash.loginShellInit = ''
+    if [ "$(tty)" = "/dev/tty1" ]; then
+      export PATH=${lib.makeBinPath (with pkgs; [waydroid cage])}:$PATH
+      export XDG_RUNTIME_DIR=/run/user/$(id -u)
+      # wait for waydroid-init to finish
+      while [ ! -f /var/lib/waydroid-setup/done ]; do
+        sleep 2
+      done
+      WLR_RENDERER=pixman cage -- waydroid app launch com.roblox.client
+    fi
+  '';
 
   # ── zram ──────────────────────────────────────────────────────────────────
   zramSwap = {
