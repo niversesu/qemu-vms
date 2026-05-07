@@ -103,6 +103,10 @@ in
     pkgs.nur.repos.ataraxiasjel.waydroid-script
   ];
 
+  # ── Waydroid images (declarative, via environment.etc) ────────────────────
+  environment.etc."waydroid-extra/images/system.img".source = waydroidSystem;
+  environment.etc."waydroid-extra/images/vendor.img".source = waydroidVendor;
+
   # ── Waydroid ──────────────────────────────────────────────────────────────
   virtualisation.waydroid.enable = true;
 
@@ -122,14 +126,12 @@ in
       Type = "oneshot";
       RemainAfterExit = true;
       StateDirectory = "waydroid-setup";
+      User = "root";
       ExecStart = pkgs.writeShellScript "waydroid-init" ''
         export PATH=${lib.makeBinPath (with pkgs; [waydroid])}:$PATH
         STAMP=/var/lib/waydroid-setup/done
         if [ -f "$STAMP" ]; then exit 0; fi
 
-        mkdir -p /etc/waydroid-extra/images
-        ln -sf ${waydroidSystem} /etc/waydroid-extra/images/system.img
-        ln -sf ${waydroidVendor} /etc/waydroid-extra/images/vendor.img
         waydroid init -f
         waydroid app install ${robloxApk}
         touch "$STAMP"
