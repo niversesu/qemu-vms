@@ -105,7 +105,7 @@ in
     "net.ipv6.conf.all.forwarding" = 1;
   };
 
-  # ── Waydroid first-boot setup + launch ───────────────────────────────────
+  # ── Waydroid first-boot setup + launch ────────────────────────────────────
   systemd.services.waydroid-setup = {
     description = "Initialize Waydroid, install Roblox, and launch it";
     wantedBy = ["multi-user.target"];
@@ -115,14 +115,15 @@ in
       Type = "oneshot";
       RemainAfterExit = true;
       User = "kale-vm";
+      StateDirectory = "waydroid-setup";
       ExecStart = pkgs.writeShellScript "waydroid-setup" ''
+        export PATH=${lib.makeBinPath (with pkgs; [waydroid cage])}:$PATH
         STAMP=/var/lib/waydroid-setup/done
 
         if [ ! -f "$STAMP" ]; then
           waydroid init -s GAPPS -f
           sleep 5
           waydroid app install ${robloxApk}
-          mkdir -p /var/lib/waydroid-setup
           touch "$STAMP"
         fi
 
