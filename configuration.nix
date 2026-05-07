@@ -122,49 +122,43 @@ in
     description = "Initialize Waydroid and install Roblox";
     wantedBy = ["multi-user.target"];
     after = ["waydroid-container.service"];
+    startLimitIntervalSec = 0;
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
       StateDirectory = "waydroid-setup";
       User = "root";
+      Restart = "on-failure";
+      RestartSec = "5s";
       ExecStart = pkgs.writeShellScript "waydroid-init" ''
         export PATH=${lib.makeBinPath (with pkgs; [waydroid])}:$PATH
         STAMP=/var/lib/waydroid-setup/done
         if [ -f "$STAMP" ]; then exit 0; fi
 
-        echo "Waiting for Waydroid session to be ready..."
+        echo "Waiting for Waydroid to leave STOPPED state..."
         while true; do
-          LIST=$(waydroid app list 2>&1)
-          echo "App list output: $LIST"
-
-          if echo "$LIST" | grep -qi "WayDroid session is stopped"; then
-            echo "Session not ready, retrying in 5s..."
+          STATUS=$(waydroid status 2>&1)
+          echo "Status: $STATUS"
+          if echo "$STATUS" | grep -qi "STOPPED"; then
             sleep 5
             continue
           fi
-
-          # Session is alive, check if Roblox is installed
-          if echo "$LIST" | grep -q "com.roblox.client"; then
-            echo "Roblox already installed, stamping."
-            break
-          fi
-
-          echo "Roblox not found, installing..."
-          waydroid app install ${robloxApk}
-
-          # Now verify it actually installed
-          LIST=$(waydroid app list 2>&1)
-          echo "App list after install: $LIST"
-          if echo "$LIST" | grep -q "com.roblox.client"; then
-            echo "Roblox installed successfully, stamping."
-            break
-          fi
-
-          echo "Install may have failed, retrying..."
-          sleep 5
+          echo "Waydroid is up, proceeding."
+          break
         done
 
+        echo "Running app install..."
+        OUTPUT=$(waydroid app install ${robloxApk} 2>&1)
+        echo "Install output: $OUTPUT"
+
+        if [ -n "$OUTPUT" ]; then
+          echo "Install produced output, something went wrong — failing so systemd restarts us."
+          exit 1
+        fi
+
+        echo "Install succeeded (no output), stamping."
         touch "$STAMP"
+        exit 0
       '';
     };
   };
