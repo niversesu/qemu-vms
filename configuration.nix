@@ -170,9 +170,6 @@ in
     if [ "$(tty)" = "/dev/tty1" ]; then
       export PATH=${lib.makeBinPath (with pkgs; [waydroid cage])}:$PATH
       export XDG_RUNTIME_DIR=/run/user/$(id -u)
-      while [ ! -f /var/lib/waydroid-setup/done ]; do
-        sleep 2
-      done
       waydroid session start &
       sleep 3
       WLR_RENDERER=pixman cage -- waydroid show-full-ui
