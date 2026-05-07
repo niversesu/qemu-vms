@@ -1,0 +1,7 @@
+*
+!.gitignore
+!configuration.nix
+!flake.lock
+!flake.nix
+!LICENSE
+!README.md
