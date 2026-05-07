@@ -133,7 +133,22 @@ in
         if [ -f "$STAMP" ]; then exit 0; fi
 
         waydroid init -f
-        waydroid app install ${robloxApk}
+
+        echo "Waiting for Waydroid session to be ready..."
+        while true; do
+          OUTPUT=$(waydroid app install ${robloxApk} 2>&1)
+          echo "Install output: $OUTPUT"
+
+          if echo "$OUTPUT" | grep -qi "WayDroid session is stopped"; then
+            echo "Session not ready, retrying in 5s..."
+            sleep 5
+            continue
+          fi
+
+          echo "Install returned a conclusive result, stamping."
+          break
+        done
+
         touch "$STAMP"
       '';
     };
