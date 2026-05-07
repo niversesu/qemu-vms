@@ -120,7 +120,7 @@ in
         STAMP=/var/lib/waydroid-setup/done
         if [ -f "$STAMP" ]; then exit 0; fi
 
-        waydroid init -s GAPPS -f
+        waydroid init -f
         sleep 5
         waydroid app install ${robloxApk}
         touch "$STAMP"
@@ -135,11 +135,12 @@ in
     if [ "$(tty)" = "/dev/tty1" ]; then
       export PATH=${lib.makeBinPath (with pkgs; [waydroid cage])}:$PATH
       export XDG_RUNTIME_DIR=/run/user/$(id -u)
-      # wait for waydroid-init to finish
       while [ ! -f /var/lib/waydroid-setup/done ]; do
         sleep 2
       done
-      WLR_RENDERER=pixman cage -- waydroid app launch com.roblox.client
+      waydroid session start &
+      sleep 3
+      WLR_RENDERER=pixman cage -- waydroid show-full-ui
     fi
   '';
 
