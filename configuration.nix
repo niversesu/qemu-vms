@@ -105,28 +105,41 @@ in
     "net.ipv6.conf.all.forwarding" = 1;
   };
 
-  # ── Waydroid first-boot setup + launch ────────────────────────────────────
-  systemd.services.waydroid-setup = {
-    description = "Initialize Waydroid, install Roblox, and launch it";
+  # ── Waydroid init (root, once) ────────────────────────────────────────────
+  systemd.services.waydroid-init = {
+    description = "Initialize Waydroid and install Roblox";
     wantedBy = ["multi-user.target"];
     after = ["waydroid-container.service" "network-online.target"];
     wants = ["network-online.target"];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      User = "kale-vm";
       StateDirectory = "waydroid-setup";
-      ExecStart = pkgs.writeShellScript "waydroid-setup" ''
-        export PATH=${lib.makeBinPath (with pkgs; [waydroid cage])}:$PATH
+      ExecStart = pkgs.writeShellScript "waydroid-init" ''
+        export PATH=${lib.makeBinPath (with pkgs; [waydroid])}:$PATH
         STAMP=/var/lib/waydroid-setup/done
+        if [ -f "$STAMP" ]; then exit 0; fi
 
-        if [ ! -f "$STAMP" ]; then
-          waydroid init -s GAPPS -f
-          sleep 5
-          waydroid app install ${robloxApk}
-          touch "$STAMP"
-        fi
+        waydroid init -s GAPPS -f
+        sleep 5
+        waydroid app install ${robloxApk}
+        touch "$STAMP"
+      '';
+    };
+  };
 
+  # ── Waydroid launch (user, after init) ────────────────────────────────────
+  systemd.services.waydroid-launch = {
+    description = "Launch Roblox in Waydroid";
+    wantedBy = ["multi-user.target"];
+    after = ["waydroid-init.service"];
+    requires = ["waydroid-init.service"];
+    serviceConfig = {
+      Type = "simple";
+      User = "kale-vm";
+      ExecStart = pkgs.writeShellScript "waydroid-launch" ''
+        export PATH=${lib.makeBinPath (with pkgs; [waydroid cage])}:$PATH
+        export XDG_RUNTIME_DIR=/run/user/$(id -u)
         WLR_RENDERER=pixman cage -- waydroid app launch com.roblox.client
       '';
     };
