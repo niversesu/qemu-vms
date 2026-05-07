@@ -132,21 +132,36 @@ in
         STAMP=/var/lib/waydroid-setup/done
         if [ -f "$STAMP" ]; then exit 0; fi
 
-        waydroid init -f
-
         echo "Waiting for Waydroid session to be ready..."
         while true; do
-          OUTPUT=$(waydroid app install ${robloxApk} 2>&1)
-          echo "Install output: $OUTPUT"
+          LIST=$(waydroid app list 2>&1)
+          echo "App list output: $LIST"
 
-          if echo "$OUTPUT" | grep -qi "WayDroid session is stopped"; then
+          if echo "$LIST" | grep -qi "WayDroid session is stopped"; then
             echo "Session not ready, retrying in 5s..."
             sleep 5
             continue
           fi
 
-          echo "Install returned a conclusive result, stamping."
-          break
+          # Session is alive, check if Roblox is installed
+          if echo "$LIST" | grep -q "com.roblox.client"; then
+            echo "Roblox already installed, stamping."
+            break
+          fi
+
+          echo "Roblox not found, installing..."
+          waydroid app install ${robloxApk}
+
+          # Now verify it actually installed
+          LIST=$(waydroid app list 2>&1)
+          echo "App list after install: $LIST"
+          if echo "$LIST" | grep -q "com.roblox.client"; then
+            echo "Roblox installed successfully, stamping."
+            break
+          fi
+
+          echo "Install may have failed, retrying..."
+          sleep 5
         done
 
         touch "$STAMP"
