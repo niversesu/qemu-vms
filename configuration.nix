@@ -10,6 +10,14 @@ let
     url = "https://pub-786f3caa6e0c467d81af67b260388ae9.r2.dev/roblox-2.718.1110.apk";
     sha256 = "006xa2cn95igv5ixg17ij3hryj9229rq7zpn4jypfd5ns3ahlacc";
   };
+  waydroidSystem = pkgs.fetchurl {
+    url = "https://pub-786f3caa6e0c467d81af67b260388ae9.r2.dev/system.img";
+    sha256 = "sha256-B9SthRdo2s7I3K5jOla41lQfE9vevjwx1ver/sld5fc=";
+  };
+  waydroidVendor = pkgs.fetchurl {
+    url = "https://pub-786f3caa6e0c467d81af67b260388ae9.r2.dev/vendor.img";
+    sha256 = "sha256-Xtr7kmeMWr7HyEA8aHPOHeWDAJpXpstt5E2Z+bP1wHA=";
+  };
 in
 
 {
@@ -109,8 +117,7 @@ in
   systemd.services.waydroid-init = {
     description = "Initialize Waydroid and install Roblox";
     wantedBy = ["multi-user.target"];
-    after = ["waydroid-container.service" "network-online.target"];
-    wants = ["network-online.target"];
+    after = ["waydroid-container.service"];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -120,8 +127,10 @@ in
         STAMP=/var/lib/waydroid-setup/done
         if [ -f "$STAMP" ]; then exit 0; fi
 
+        mkdir -p /var/lib/waydroid/images
+        cp ${waydroidSystem} /var/lib/waydroid/images/system.img
+        cp ${waydroidVendor} /var/lib/waydroid/images/vendor.img
         waydroid init -f
-        sleep 5
         waydroid app install ${robloxApk}
         touch "$STAMP"
       '';
