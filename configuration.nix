@@ -127,9 +127,9 @@ in
         STAMP=/var/lib/waydroid-setup/done
         if [ -f "$STAMP" ]; then exit 0; fi
 
-        mkdir -p /var/lib/waydroid/images
-        cp ${waydroidSystem} /var/lib/waydroid/images/system.img
-        cp ${waydroidVendor} /var/lib/waydroid/images/vendor.img
+        mkdir -p /etc/waydroid-extra/images
+        ln -sf ${waydroidSystem} /etc/waydroid-extra/images/system.img
+        ln -sf ${waydroidVendor} /etc/waydroid-extra/images/vendor.img
         waydroid init -f
         waydroid app install ${robloxApk}
         touch "$STAMP"
