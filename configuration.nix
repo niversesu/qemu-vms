@@ -172,11 +172,7 @@ in
       export XDG_RUNTIME_DIR=/run/user/$(id -u)
       waydroid session start &
       sleep 3
-      if [ -f "$HOME/.waydroid-setup-done" ]; then
-        WLR_RENDERER=pixman cage -- waydroid app launch com.roblox.client
-      else
-        WLR_RENDERER=pixman cage -- waydroid show-full-ui
-      fi
+      WLR_RENDERER=pixman cage -- waydroid show-full-ui
     fi
   '';
 
