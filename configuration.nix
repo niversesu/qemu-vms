@@ -152,6 +152,49 @@ in
         echo "Install output: $OUTPUT"
 
         if [ -n "$OUTPUT" ]; then
-          echo "Install produced output, something went wrong — failing so systemd restarts us."
+          echo "Install produced output, something went wrong, failing so systemd restarts us."
           exit 1
         fi
+
+        echo "Install succeeded, stamping."
+        touch "$STAMP"
+        exit 0
+      '';
+    };
+  };
+
+  # ── Autologin + launch on tty1 ────────────────────────────────────────────
+  services.getty.autologinUser = "kale-vm";
+
+  programs.bash.loginShellInit = ''
+    if [ "$(tty)" = "/dev/tty1" ]; then
+      export PATH=${lib.makeBinPath (with pkgs; [waydroid cage])}:$PATH
+      export XDG_RUNTIME_DIR=/run/user/$(id -u)
+      waydroid session start &
+      sleep 3
+      WLR_RENDERER=pixman cage -- waydroid show-full-ui
+    fi
+  '';
+
+  # ── zram ──────────────────────────────────────────────────────────────────
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 25;
+  };
+
+  # ── Nix store management ──────────────────────────────────────────────────
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 1d";
+  };
+  nix.settings = {
+    auto-optimise-store = true;
+    max-jobs = "auto";
+    cores = 0;
+    sandbox = true;
+  };
+
+  system.stateVersion = "25.05";
+}
